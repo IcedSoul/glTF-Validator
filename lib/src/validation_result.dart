@@ -107,20 +107,70 @@ class ValidationResult {
     var maxInfluences = 0;
     var totalVertexCount = 0;
     var totalTriangleCount = 0;
+    var meshCount = 0;
     for (final mesh in root.meshes) {
+      map['mesh'] = meshCount;
+      var meshPrimitives = 0;
       if (mesh.primitives != null) {
         drawCallCount += mesh.primitives.length;
+        final accessors = <Accessor>{};
+        final vertexAccessorsMap = <String, Set<Accessor>>{};
         for (final primitive in mesh.primitives) {
-          if (primitive.vertexCount != -1) {
-            totalVertexCount += primitive.vertexCount;
-          }
+          // if (primitive.vertexCount != -1) {
+          //   totalVertexCount += primitive.vertexCount;
+          // }
+          final key = 'mesh: $meshCount, meshPrimitives: $meshPrimitives, '
+              'trianglesCount: ${primitive.trianglesCount}, vertexCount';
+          map[key] = primitive.vertexCount;
+          meshPrimitives++;
           totalTriangleCount += primitive.trianglesCount;
           maxAttributes = max(maxAttributes, primitive.attributes.length);
           maxUVs = max(maxUVs, primitive.texCoordCount);
           maxInfluences = max(maxInfluences, primitive.jointsCount * 4);
+          accessors.add(primitive.indices);
+          primitive.attributes.forEach((key, value) {
+            if(vertexAccessorsMap.containsKey(key)){
+              vertexAccessorsMap[key].add(value);
+            } else {
+              vertexAccessorsMap[key] = <Accessor>{value};
+            }
+          });
         }
+        var size = 0;
+
+        for(final accessor in accessors){
+          size += accessor.componentLength * accessor.count
+              * ACCESSOR_TYPES_LENGTHS[accessor.type];
+        }
+
+        var meshVertexCount = 0;
+        vertexAccessorsMap.forEach((key, vertexAccessors) {
+          var vertexSize = 0;
+          for(final accessor in vertexAccessors) {
+            vertexSize += accessor.componentLength * accessor.count
+                * ACCESSOR_TYPES_LENGTHS[accessor.type];
+          }
+          final vertexAccessorText = 'Mesh $meshCount have $meshPrimitives '
+              'primitives, vertex $key accessor count ${vertexAccessors.length}, '
+              'vertex $key accessor length';
+          map[vertexAccessorText] = vertexSize;
+          if(meshVertexCount <= 0){
+            for (final accessor in vertexAccessors) {
+              meshVertexCount += accessor.count;
+            }
+          }
+        });
+
+        totalVertexCount += meshVertexCount;
+
+        final accessorText = 'Mesh $meshCount have $meshPrimitives '
+            'primitives, triangle accessor count ${accessors.length}, '
+            'triangle accessor length';
+        map[accessorText] = size;
+        meshCount++;
       }
     }
+
     map['drawCallCount'] = drawCallCount;
     map['totalVertexCount'] = totalVertexCount;
     map['totalTriangleCount'] = totalTriangleCount;
