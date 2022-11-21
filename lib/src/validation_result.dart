@@ -110,15 +110,31 @@ class ValidationResult {
     for (final mesh in root.meshes) {
       if (mesh.primitives != null) {
         drawCallCount += mesh.primitives.length;
+        final vertexAccessorsMap = <String, Set<Accessor>>{};
         for (final primitive in mesh.primitives) {
-          if (primitive.vertexCount != -1) {
-            totalVertexCount += primitive.vertexCount;
-          }
           totalTriangleCount += primitive.trianglesCount;
           maxAttributes = max(maxAttributes, primitive.attributes.length);
           maxUVs = max(maxUVs, primitive.texCoordCount);
           maxInfluences = max(maxInfluences, primitive.jointsCount * 4);
+          primitive.attributes.forEach((attribute, accessor) {
+            if(vertexAccessorsMap.containsKey(attribute)){
+              vertexAccessorsMap[attribute].add(accessor);
+            } else {
+              vertexAccessorsMap[attribute] = <Accessor>{accessor};
+            }
+          });
         }
+
+        var meshVertexCount = 0;
+        vertexAccessorsMap.forEach((key, vertexAccessors) {
+          if(meshVertexCount <= 0){
+            for (final accessor in vertexAccessors) {
+              meshVertexCount += accessor.count;
+            }
+          }
+        });
+
+        totalVertexCount += meshVertexCount;
       }
     }
     map['drawCallCount'] = drawCallCount;
