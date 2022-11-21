@@ -107,7 +107,7 @@ class GlbReader implements GltfReader {
   void _abort() {
     _subscription.cancel();
     if (!_completer.isCompleted) {
-      _completer.complete(GltfReaderResult(mimeType, null, _binaryBuffer));
+      _completer.complete(GltfReaderResult(mimeType, null, _binaryBuffer, null));
     }
   }
 
@@ -331,11 +331,12 @@ class GlbReader implements GltfReader {
           if (_jsonReaderResult != null) {
             _jsonReaderResult.then((result) {
               _completer.complete(
-                  GltfReaderResult(mimeType, result?.gltf, _binaryBuffer));
+                  GltfReaderResult(mimeType, result?.gltf, _binaryBuffer,
+                      result?.originJson));
             }, onError: _onError);
           } else {
             _completer
-                .complete(GltfReaderResult(mimeType, null, _binaryBuffer));
+                .complete(GltfReaderResult(mimeType, null, _binaryBuffer, null));
           }
         }
         break;

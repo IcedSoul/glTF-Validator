@@ -48,12 +48,15 @@ class ValidatorOptions {
 
   static const String kConfig = 'config';
 
+  static const String kJsonFormat = 'json-format';
+
   final bool validateResources;
   final bool writeTimestamp;
   final bool absolutePath;
   final bool messages;
   final bool printAll;
   final bool stdoutReport;
+  final bool jsonFormat;
   final int threads;
 
   ValidatorOptions(
@@ -63,7 +66,9 @@ class ValidatorOptions {
       this.messages = false,
       this.printAll = false,
       this.stdoutReport = false,
-      this.threads = 0});
+      this.jsonFormat = false,
+      this.threads = 0,
+      });
 
   factory ValidatorOptions.fromArgs(ArgResults args) => ValidatorOptions(
       validateResources: args[kValidateResources] == true,
@@ -72,6 +77,7 @@ class ValidatorOptions {
       absolutePath: args[kAbsolutePath] == true,
       printAll: args[kAll] == true,
       stdoutReport: args[kStdout] == true,
+      jsonFormat: args[kJsonFormat] == true,
       threads: max(int.tryParse((args[kThreads] ?? '') as String) ?? 0, 0));
 }
 
@@ -200,7 +206,12 @@ Future<void> run(List<String> args) async {
     ..addOption(ValidatorOptions.kThreads,
         abbr: 'h',
         help: 'The number of threads for directory validation. '
-            'Set to 0 (default) for auto selection.');
+            'Set to 0 (default) for auto selection.')
+    ..addFlag(ValidatorOptions.kJsonFormat,
+        abbr: 'j',
+        help: 'Generate an additional gltf json file. '
+            'Generate gltf index json file.');
+
 
   try {
     argResult = parser.parse(args);
@@ -395,6 +406,14 @@ Future<bool> _processFile(ValidationTask task) async {
   } else {
     await File('${task.filename}.report.json')
         .writeAsString(reportString, flush: true);
+  }
+  
+  if(task.validatorOptions.jsonFormat) {
+    final jsonString = readerResult.originJson;
+    if(jsonString != null) {
+      await File('${task.filename}.format.json')
+          .writeAsString(jsonString, flush: true);
+    }
   }
 
   return errors.isNotEmpty;

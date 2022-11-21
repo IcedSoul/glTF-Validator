@@ -34,8 +34,10 @@ class GltfReaderResult {
   final String mimeType;
   final Gltf gltf;
   final Uint8List buffer;
+  final String originJson;
 
-  GltfReaderResult(this.mimeType, this.gltf, this.buffer);
+  GltfReaderResult(this.mimeType, this.gltf, this.buffer, this.originJson);
+
 }
 
 abstract class GltfReader {
@@ -147,7 +149,11 @@ class GltfJsonReader implements GltfReader {
       if (result is Map<String, Object>) {
         try {
           final root = Gltf.fromMap(result, _context);
-          _completer.complete(GltfReaderResult(mimeType, root, null));
+          final jsonString = const JsonEncoder.withIndent('    ')
+              .convert(result);
+          // print('get gltf string: $jsonString');
+          _completer
+              .complete(GltfReaderResult(mimeType, root, null, jsonString));
         } on IssuesLimitExceededException catch (_) {
           _abort();
         }
@@ -221,7 +227,8 @@ class GltfJsonReader implements GltfReader {
     if (parsedJson is Map<String, Object>) {
       try {
         final root = Gltf.fromMap(parsedJson, context);
-        return GltfReaderResult(_kMimeType, root, null);
+        return GltfReaderResult(_kMimeType, root, null,
+            const JsonEncoder.withIndent('    ').convert(parsedJson));
       } on IssuesLimitExceededException catch (_) {
         return null;
       }
